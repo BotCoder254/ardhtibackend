@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: ardhikenya-backend
+    env: node
+    region: oregon # Choose the region closest to your users
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: EMAIL_USER
+        sync: false # This will be set manually in the Render dashboard
+      - key: EMAIL_PASS
+        sync: false # This will be set manually in the Render dashboard
+      - key: MAILTRAP_HOST
+        sync: false
+      - key: MAILTRAP_PORT
+        value: "587"
+      - key: MAILTRAP_USER
+        sync: false
+      - key: MAILTRAP_PASS
+        sync: false
+      - key: VASPRO_API_KEY
+        sync: false
+      - key: VASPRO_SENDER_ID
+        value: ArdhiKenya
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://ardhikenya.com
+      - key: BASE_URL
+        fromService:
+          type: web
+          name: ardhikenya-backend
+          envVarKey: RENDER_EXTERNAL_URL 
