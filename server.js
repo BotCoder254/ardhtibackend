@@ -61,9 +61,22 @@ async function getAccessToken() {
   }
 }
 
-// Routes
+// Routes - Make sure to include /api prefix for all routes
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+
+// Root path handler
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: 'ArdhiKenya API Server is running',
+    version: '1.0.0',
+    endpoints: [
+      '/api/notifications',
+      '/api/subscriptions',
+      '/api/mpesa'
+    ]
+  });
+});
 
 // M-Pesa Routes
 app.get("/api/mpesa", (req, res) => {
@@ -364,6 +377,15 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'ArdhiKenya API is running' });
 });
 
+// Catch-all route for 404 errors
+app.use('*', (req, res) => {
+  console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.originalUrl}`
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -377,4 +399,6 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API base URL: ${process.env.BASE_URL || `http://localhost:${PORT}`}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 }); 
