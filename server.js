@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000;
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'https://ardhikenya.com'],
+  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'https://mugomda.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
