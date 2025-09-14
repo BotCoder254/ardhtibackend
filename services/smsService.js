@@ -1,4 +1,4 @@
-const https = require('https');
+const axios = require('axios');
 const { db } = require('../config/firebase');
 require('dotenv').config();
 
@@ -18,7 +18,7 @@ const logSmsActivity = async (data) => {
 };
 
 /**
- * Send SMS notifications via VasPro API
+ * Send SMS notifications via the new SMS gateway
  * @param {string} phoneNumber - Recipient phone number
  * @param {string} message - SMS content
  * @returns {Promise<Object>} - API response
@@ -44,89 +44,43 @@ const sendSMSNotification = async (phoneNumber, message) => {
     
     console.log(`Sending SMS to ${formattedPhone}: ${message}`);
 
-    const data = JSON.stringify({
-      apiKey: process.env.VASPRO_API_KEY || '59f36122826e045b6080d11c60eaf36b',
-      shortCode: process.env.VASPRO_SENDER_ID || 'VasPro',
-      message: message,
-      recipient: formattedPhone,
-      callbackURL: '',
-      enqueue: 1,
-      isScheduled: false,
-    });
-
-    const options = {
-      hostname: 'api.vaspro.co.ke',
-      port: 443,
-      path: '/v3/BulkSMS/api/create',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': data.length,
-      },
+    const url = 'http://167.172.14.50:4002/v1/send-sms';
+    const requestBody = {
+      apiClientID: parseInt(process.env.SMS_API_CLIENT_ID || '845'),
+      key: process.env.SMS_API_KEY || '',
+      secret: process.env.SMS_API_SECRET || '',
+      txtMessage: message,
+      MSISDN: formattedPhone,
+      serviceID: parseInt(process.env.SMS_SERVICE_ID || '5518'),
     };
 
-    return new Promise((resolve, reject) => {
-      const smsReq = https.request(options, (smsRes) => {
-        let responseData = '';
-
-        smsRes.on('data', (chunk) => {
-          responseData += chunk;
-        });
-
-        smsRes.on('end', () => {
-          try {
-            const parsedResponse = JSON.parse(responseData);
-            console.log('SMS API response:', parsedResponse);
-            
-            // Log to Firestore
-            logSmsActivity({
-              phoneNumber: formattedPhone,
-              message,
-              status: 'sent',
-              responseData: parsedResponse
-            });
-            
-            resolve({ success: true, response: parsedResponse });
-          } catch (parseError) {
-            console.error('Error parsing SMS API response:', parseError, responseData);
-            logSmsActivity({
-              phoneNumber: formattedPhone,
-              message,
-              status: 'error',
-              error: 'Failed to parse API response',
-              rawResponse: responseData
-            });
-            resolve({ success: false, error: 'Invalid API response' });
-          }
-        });
-      });
-
-      smsReq.on('error', (error) => {
-        console.error('Error sending SMS:', error);
-        
-        // Log failure to Firestore
-        logSmsActivity({
-          phoneNumber: formattedPhone,
-          message,
-          status: 'failed',
-          error: error.message
-        });
-        
-        resolve({ success: false, error: error.message });
-      });
-
-      smsReq.write(data);
-      smsReq.end();
+    const response = await axios.post(url, requestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
-  } catch (error) {
-    console.error('SMS sending error:', error);
+
+    console.log('SMS API response:', response.data);
     
-    // Log exception to Firestore
+    // Log to Firestore
     await logSmsActivity({
-      phoneNumber: phoneNumber || 'unknown',
-      message: message || 'unknown',
-      status: 'failed',
-      error: error.message
+      phoneNumber: formattedPhone,
+      message,
+      status: 'sent',
+      responseData: response.data
+    });
+    
+    return { success: true, response: response.data };
+  } catch (error) {
+    console.error('Error sending SMS:', error.message);
+    
+    // Log error to Firestore
+    await logSmsActivity({
+      phoneNumber: formattedPhone || 'unknown',
+      message,
+      status: 'error',
+      error: error.message,
+      responseData: error.response?.data
     });
     
     return { success: false, error: error.message };
